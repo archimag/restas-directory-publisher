@@ -1,6 +1,10 @@
 ;;;; restas-direcotry-publisher.lisp
 ;;;;
-;;;; RESTAS plugin for publish  directories:
+;;;; This file is part of the restas-directory-publisher library, released under Lisp-LGPL.
+;;;; See file COPYING for details.
+;;;;
+;;;; Author: Moskvitin Andrey <archimag@gmail.com>
+
 
 (restas:define-plugin #:restas.directory-publisher
     (:use :cl :iter)
@@ -63,7 +67,7 @@
         (format nil "~A B" bytes))))
 
 (defun path-info (path)
-  "System information in plist by pathname"
+  "Information on pathname as plist"
   (let* ((stat #+sbcl (sb-posix:stat path)
                #-sbcl nil)
          (last-modified (local-time:format-timestring nil

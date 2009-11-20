@@ -1,4 +1,10 @@
-;;;; restas-extra.asd
+;;;; restas-directory-publisher.asd
+;;;;
+;;;; This file is part of the restas-directory-publisher library, released under Lisp-LGPL.
+;;;; See file COPYING for details.
+;;;;
+;;;; Author: Moskvitin Andrey <archimag@gmail.com>
+
 
 (defpackage #:restas-directory-publisher-system
   (:use #:cl #:asdf))
