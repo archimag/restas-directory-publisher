@@ -8,7 +8,10 @@
 
 (restas:define-plugin #:restas.directory-publisher
     (:use :cl :iter)
-  (:export #:*directory*))
+  (:export #:*directory*
+           #:*directory-index-files*
+           #:*autoindex*
+           #:*autoindex-template*))
 
 (in-package #:restas.directory-publisher)
 
