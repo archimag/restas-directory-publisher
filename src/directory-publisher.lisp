@@ -7,11 +7,12 @@
 
 
 (restas:define-plugin #:restas.directory-publisher
-    (:use :cl :iter)
+  (:use :cl :iter)
   (:export #:*directory*
            #:*directory-index-files*
            #:*autoindex*
-           #:*autoindex-template*))
+           #:*autoindex-template*
+           #:*enable-cgi-by-type*))
 
 (in-package #:restas.directory-publisher)
 
@@ -35,6 +36,8 @@
 (defvar *autoindex* t)
 
 (defvar *autoindex-template* 'restas.directory-publisher.view:autoindex)
+
+(defvar *enable-cgi-by-type* nil)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;;; directory info
@@ -112,4 +115,7 @@
                 (funcall *autoindex-template*
                          (directory-autoindex-info path relative-path))
                 hunchentoot:+http-not-found+))
-        path)))
+        (if (and (find (pathname-type path) *enable-cgi-by-type* :test #'string=)
+                 (fad:file-exists-p path))
+            (hunchentoot-cgi::handle-cgi-script path)
+        path))))
