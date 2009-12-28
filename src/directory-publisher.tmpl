@@ -3,20 +3,15 @@
 //
 // This file is part of the restas-directory-publisher library, released under Lisp-LGPL.
 // See file COPYING for details.
-// test
+// 
 // Author: Moskvitin Andrey <archimag@gmail.com>
-//
-
-
-/*
- * Test! Test! Test! 
- */
-
-
-/* Test! Test! Test! */
 
 
 {namespace restas.directory-publisher.view}
+
+/* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *
+ * Autoindex content
+ * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * */
 
 {template autoindex-content}
     <table summary="Directory Listing" cellpadding="0" cellspacing="0">
@@ -42,7 +37,7 @@
                         <a href="{$path.name}{if $path.type == 'Directory'}/{/if}">{$path.name}</a>{if $path.type == 'Directory'}/{/if}
                     </td>
                     <td class="m">{$path.lastModified}</td>
-                    <td class="s">{$path.size ? $path.size : '- &nbsp;'}</td>
+                    <td class="s">{$path.size ? $path.size : '- &nbsp;' |noAutoescape}</td>
                     <td class="t">{$path.type}</td>
                 </tr>
             {/foreach}
@@ -50,6 +45,9 @@
     </table>
 {/template}
 
+/* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *
+ * Autoindex standalone frame
+ * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * */
 
 {template autoindex}
     <!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.1//EN" "http://www.w3.org/TR/xhtml11/DTD/xhtml11.dtd">
