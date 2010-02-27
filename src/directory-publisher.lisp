@@ -102,20 +102,22 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
   
 (define-route route ("*path" :method :get)
-  (let* ((relative-path (hunchentoot:url-decode (format nil "~{~A~^/~}" path)))
+  (let* ((relative-path (pathname (hunchentoot:url-decode (format nil "~{~A~^/~}" path))))
          (path (merge-pathnames relative-path
                                 *directory*)))
-    (if (and (fad:directory-pathname-p path)
-             (fad:directory-exists-p path))
-        (or (iter (for index in *directory-index-files*)
-                  (let ((index-path (merge-pathnames index path)))
-                    (finding index-path
-                             such-that (fad:file-exists-p index-path))))
-            (if *autoindex*
-                (funcall *autoindex-template*
-                         (directory-autoindex-info path relative-path))
-                hunchentoot:+http-not-found+))
-        (if (and (find (pathname-type path) *enable-cgi-by-type* :test #'string=)
-                 (fad:file-exists-p path))
-            (hunchentoot-cgi::handle-cgi-script path)
-        path))))
+    (cond
+      ((find :up (pathname-directory relative-path)) hunchentoot:+http-bad-request+)
+      ((and (fad:directory-pathname-p path)
+            (fad:directory-exists-p path)) (or (iter (for index in *directory-index-files*)
+                                                     (let ((index-path (merge-pathnames index path)))
+                                                       (finding index-path
+                                                                such-that (fad:file-exists-p index-path))))
+                                               (if *autoindex*
+                                                   (funcall *autoindex-template*
+                                                            (directory-autoindex-info path relative-path))
+                                                   hunchentoot:+http-not-found+)))
+      ((not (fad:file-exists-p path)) hunchentoot:+http-not-found+)
+      ((find (pathname-type path) 
+             *enable-cgi-by-type* 
+             :test #'string=) (hunchentoot-cgi::handle-cgi-script path))
+      (t path))))
