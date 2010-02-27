@@ -6,7 +6,7 @@
 ;;;; Author: Moskvitin Andrey <archimag@gmail.com>
 
 
-(restas:define-plugin #:restas.directory-publisher
+(restas:define-module #:restas.directory-publisher
   (:use :cl :iter)
   (:export #:*directory*
            #:*directory-index-files*
