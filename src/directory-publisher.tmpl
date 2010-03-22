@@ -34,7 +34,9 @@
             {foreach $path in $paths}
                 <tr>
                     <td class="n">
-                        <a href="{$path.name}{if $path.type == 'Directory'}/{/if}">{$path.name}</a>{if $path.type == 'Directory'}/{/if}
+                        <a href="{$path.name |escapeUri}{if $path.type == 'Directory'}/{/if}">{$path.name}</a>
+                        {nil}
+                        {if $path.type == 'Directory'}/{/if}
                     </td>
                     <td class="m">{$path.lastModified}</td>
                     <td class="s">{$path.size ? $path.size : '- &nbsp;' |noAutoescape}</td>

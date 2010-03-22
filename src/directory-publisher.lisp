@@ -102,7 +102,7 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
   
 (define-route route ("*path" :method :get)
-  (let* ((relative-path (pathname (hunchentoot:url-decode (format nil "~{~A~^/~}" path))))
+  (let* ((relative-path (pathname (format nil "~{~A~^/~}" path)))
          (path (merge-pathnames relative-path
                                 *directory*)))
     (cond
