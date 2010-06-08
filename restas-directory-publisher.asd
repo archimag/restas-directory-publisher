@@ -12,6 +12,6 @@
 (in-package #:restas-directory-publisher-system)
 
 (defsystem restas-directory-publisher
-  :depends-on (#:restas #:closure-template #:local-time #:hunchentoot-cgi)
+  :depends-on (#:restas #:closure-template #:local-time #:iolib.syscalls #+sbcl :hunchentoot-cgi)
   :components ((:module "src"
                         :components ((:file "directory-publisher")))))

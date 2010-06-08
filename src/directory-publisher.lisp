@@ -74,10 +74,9 @@
 
 (defun path-info (path)
   "Information on pathname as plist"
-  (let* ((stat #+sbcl (sb-posix:stat path)
-               #-sbcl nil)
+  (let* ((stat (isys:stat (namestring path)))
          (last-modified (local-time:format-timestring nil
-                                                      (local-time:unix-to-timestamp (sb-posix:stat-mtime stat))
+                                                      (local-time:unix-to-timestamp (isys:stat-mtime stat))
                                                       :format '((:day 2) #\- :short-month #\- :year #\Space (:hour 2) #\: (:min 2))))
          (dir (fad:directory-pathname-p path)))
     (list :type (if dir
@@ -86,7 +85,7 @@
           :name (path-last-name path)
           :last-modified last-modified
           :size (if (not dir)
-                    (format-size (sb-posix:stat-size stat))))))
+                    (format-size (isys:stat-size stat))))))
 
 (defun directory-autoindex-info (path rpath)
   "Info on directory for autoindex"
@@ -117,7 +116,7 @@
                                                             (directory-autoindex-info path relative-path))
                                                    hunchentoot:+http-not-found+)))
       ((not (fad:file-exists-p path)) hunchentoot:+http-not-found+)
-      ((find (pathname-type path) 
-             *enable-cgi-by-type* 
-             :test #'string=) (hunchentoot-cgi::handle-cgi-script path))
+      #+sbcl ((find (pathname-type path) 
+                    *enable-cgi-by-type* 
+                    :test #'string=) (hunchentoot-cgi::handle-cgi-script path))
       (t path))))
