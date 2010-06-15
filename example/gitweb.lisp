@@ -8,14 +8,11 @@
 
 (asdf:operate 'asdf:load-op '#:restas-directory-publisher)
 
-(restas:defsite #:gitweb
- (:use #:cl))
+(asdf:operate 'asdf:load-op '#:restas-directory-publisher)
 
-(in-package #:gitweb)
-
-(restas:define-site-plugin tmp (#:restas.directory-publisher)
-  (restas.directory-publisher:*baseurl* '("gitweb"))
-  (restas.directory-publisher:*directory* #P"/usr/share/git/gitweb/")
-  (restas.directory-publisher:*enable-cgi-by-type* '("cgi")))
-
-(restas:start-site '#:gitweb :port 8080)
+(restas:start '#:restas.directory-publisher 
+              :port 8080 
+              :context (restas:make-context 
+                        (restas.directory-publisher:*baseurl* '("gitweb"))
+                        (restas.directory-publisher:*directory* #P"/usr/share/git/gitweb/")
+                        (restas.directory-publisher:*enable-cgi-by-type* '("cgi"))))
