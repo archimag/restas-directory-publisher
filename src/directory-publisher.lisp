@@ -40,6 +40,18 @@
 (defvar *enable-cgi-by-type* nil)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;;; native namestrings
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(defun native-namestring (path)
+  #+sbcl (sb-ext:native-namestring path)
+  #-sbcl (namestring path))
+
+(defun parse-native-namestring (thing)
+  #+sbcl (sb-ext:parse-native-namestring thing)
+  #-sbcl (parse-namestring thing))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;;; directory info
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -47,7 +59,11 @@
   "File or directory name"
   (if (fad:directory-pathname-p path)
       (car (last (pathname-directory path)))
-      (file-namestring path)))
+      (let ((name (pathname-name path))
+            (type (pathname-type path)))
+        (if type
+            (format nil "~A.~A" name type)
+            name))))
 
 (defun hidden-file-p (path)
   (char= (char (path-last-name path)
@@ -72,9 +88,10 @@
                 symbol)
         (format nil "~A B" bytes))))
 
+
 (defun path-info (path)
   "Information on pathname as plist"
-  (let* ((stat (isys:stat (namestring path)))
+  (let* ((stat (isys:stat (native-namestring path)))
          (last-modified (local-time:format-timestring nil
                                                       (local-time:unix-to-timestamp (isys:stat-mtime stat))
                                                       :format '((:day 2) #\- :short-month #\- :year #\Space (:hour 2) #\: (:min 2))))
@@ -101,7 +118,7 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
   
 (define-route route ("*path" :method :get)
-  (let* ((relative-path (pathname (format nil "~{~A~^/~}" path)))
+  (let* ((relative-path (parse-native-namestring (format nil "~{~A~^/~}" path)))
          (path (merge-pathnames relative-path
                                 *directory*)))
     (cond
