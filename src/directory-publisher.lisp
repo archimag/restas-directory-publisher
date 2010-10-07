@@ -116,22 +116,31 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;;; routes
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-  
-(define-route route ("*path" :method :get)
-  (let* ((relative-path (parse-native-namestring (format nil "~{~A~^/~}" path)))
-         (path (merge-pathnames relative-path
-                                *directory*)))
+
+(defun parse-path (str)
+  (let* ((path (parse-native-namestring str)))
+    (when (find :up (pathname-directory path))
+      (setf (hunchentoot:return-code*)  hunchentoot:+http-bad-request+)
+      (hunchentoot:abort-request-handler))
+    (merge-pathnames path *directory*)))
+
+(define-route directory-index ("*path/")
+  (let* ((relative (format nil "~{~A~^/~}/" path))
+         (path (parse-path relative)))
     (cond
-      ((find :up (pathname-directory relative-path)) hunchentoot:+http-bad-request+)
-      ((and (fad:directory-pathname-p path)
-            (fad:directory-exists-p path)) (or (iter (for index in *directory-index-files*)
-                                                     (let ((index-path (merge-pathnames index path)))
-                                                       (finding index-path
-                                                                such-that (fad:file-exists-p index-path))))
-                                               (if *autoindex*
-                                                   (funcall *autoindex-template*
-                                                            (directory-autoindex-info path relative-path))
-                                                   hunchentoot:+http-not-found+)))
+      ((fad:directory-exists-p path)
+       (or (iter (for index in *directory-index-files*)
+                 (let ((index-path (merge-pathnames index path)))
+                   (finding index-path
+                            such-that (fad:file-exists-p index-path))))
+           (if *autoindex*
+               (funcall *autoindex-template*
+                        (directory-autoindex-info path relative)))
+           hunchentoot:+http-not-found+)))))
+
+(define-route route ("*path/:file")
+  (let ((path (parse-path (format nil "~{~A~^/~}/~A" path file))))
+    (cond
       ((not (fad:file-exists-p path)) hunchentoot:+http-not-found+)
       #+sbcl ((find (pathname-type path) 
                     *enable-cgi-by-type* 
