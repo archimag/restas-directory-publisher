@@ -8,6 +8,7 @@
 (eval-when (:compile-toplevel :load-toplevel :execute)
   (asdf:operate 'asdf:load-op '#:restas-directory-publisher)
   (asdf:operate 'asdf:load-op '#:closure-template)
+  (asdf:operate 'asdf:load-op '#:parenscript)
   (asdf:operate 'asdf:load-op '#:cl-json))
 
 (restas:define-module #:restas.js-browser
@@ -20,7 +21,7 @@
                    (asdf:component-pathname (asdf:find-system '#:restas-directory-publisher))))
 
 (defparameter *templates-path*
-  (merge-pathnames "jsBroswer.tmpl"
+  (merge-pathnames "jsBrowser.tmpl"
                    *js-browser-directory*))
 
 (defparameter *js-browser-templates*
@@ -48,10 +49,15 @@
 
 (restas:mount-submodule -static- (#:restas.directory-publisher)
   (restas.directory-publisher:*baseurl* '("static"))
-  (restas.directory-publisher:*directory* (merge-pathnames "static/" *js-browser-directory*)))
+;;  (restas.directory-publisher:*directory* (merge-pathnames "static/" *js-browser-directory*)))
+  (restas.directory-publisher:*directory* #P"/")
+  (restas.directory-publisher:*autoindex* t))
 
 (restas:mount-submodule -api- (#:restas.directory-publisher)
   (restas.directory-publisher:*baseurl* '("api"))
   (restas.directory-publisher:*directory* #P"/")
   (restas.directory-publisher:*autoindex-template* #'encode-json)
   (restas.directory-publisher:*autoindex* t))
+
+
+(restas:start '#:restas.js-browser :port 8080)

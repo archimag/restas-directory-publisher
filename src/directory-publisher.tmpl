@@ -24,17 +24,21 @@
         </thead>
 
         <tbody>
-            <tr>
-                <td class="n"><a href="../">Parent Directory</a>/</td>
-                <td class="m">&nbsp;</td>
-                <td class="s">- &nbsp;</td>
-                <td class="t">Directory</td>
-            </tr>
+            {if $parent}
+                <tr>
+                    <td class="n">
+                        <a href="{$parent}">Parent Directory</a>/
+                    </td>
+                    <td class="m">&nbsp;</td>
+                    <td class="s">- &nbsp;</td>
+                    <td class="t">Directory</td>
+                </tr>
+            {/if}
 
             {foreach $path in $paths}
                 <tr>
                     <td class="n">
-                        <a href="{$path.name |id}{if $path.type == 'Directory'}/{/if}">{$path.name}</a>
+                        <a href="{$path.href}">{$path.name}</a>
                         {nil}
                         {if $path.type == 'Directory'}/{/if}
                     </td>
@@ -78,9 +82,7 @@
         <body>
             <h2>{$title}</h2>
             <div class="list">
-                {call autoindex-content}
-                    {param paths: $paths /}
-                {/call}
+                {call autoindex-content data="all" /}
             </div>
             <div class="foot"></div>
         </body>

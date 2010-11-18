@@ -107,10 +107,18 @@
 (defun directory-autoindex-info (path rpath)
   "Info on directory for autoindex"
   (list :title (format nil "Index of /~A" rpath)
-        :parent (unless (equal path *directory*) "..")
+        :parent (if (not (equal path *directory*))
+                    (restas:genurl 'route
+                                   :path (append (butlast (cdr (pathname-directory rpath)))
+                                                 '(""))))
         :paths (iter (for item in (fad:list-directory (merge-pathnames path *directory*)))
                      (unless (hidden-file-p item)
-                       (collect (path-info item))))))
+                       (collect (list* :href (restas:genurl 'route
+                                                            :path (append (cdr (pathname-directory rpath))
+                                                                          (list (path-last-name item))
+                                                                          (if (fad:directory-pathname-p item)
+                                                                              '(""))))
+                                       (path-info item)))))))
 
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;

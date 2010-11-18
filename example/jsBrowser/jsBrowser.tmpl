@@ -22,28 +22,13 @@
             <script src="static/jsBrowserTemplates.js" type="text/javascript"></script>
             <script src="static/jsBrowser.js" type="text/javascript"></script>
 
-            <style type="text/css">
-                a, a:active {text-decoration: none; color: blue;}
-                a:visited {color: #48468F;}
-                a:hover, a:focus {text-decoration: underline; color: red;}
-                body {background-color: #F5F5F5;}
-                h2 {margin-bottom: 12px;}
-                table {margin-left: 12px;}
-                th, td { font: 90% monospace; text-align: left;}
-                th { font-weight: bold; padding-right: 14px; padding-bottom: 3px;}
-                td {padding-right: 14px;}
-                td.s, th.s {text-align: right;}
-                div.list { background-color: white; border-top: 1px solid #646464; 
-                           border-bottom: 1px solid #646464; padding-top: 10px; 
-                           padding-bottom: 14px;}
-                div.foot { font: 90% monospace; color: #787878; padding-top: 4px;}
-            </style>
-
+            <link href="static/style.css" rel="stylesheet" type="text/css" />
 	    </head>
 
 	    <body>
-            <input /> <button>select</button>
-            <div id="content" />
+            <h1>None</h1>
+            <div id="content">
+            </div>
         </body>
     </html>
 {/template}
@@ -60,17 +45,23 @@
         </thead>
 
         <tbody>
-            <tr>
-                <td class="n"><a href="../">Parent Directory</a>/</td>
-                <td class="m">&nbsp;</td>
-                <td class="s">- &nbsp;</td>
-                <td class="t">Directory</td>
-            </tr>
+            {if $parent}
+                <tr>
+                    <td class="n">
+                        <span class="directory" href="{$parent}">Parent Directory</span>
+                    </td>
+                    <td class="m">&nbsp;</td>
+                    <td class="s">- &nbsp;</td>
+                    <td class="t">Directory</td>
+                </tr>
+            {/if}
 
             {foreach $path in $paths}
                 <tr>
                     <td class="n">
-                        <a href="{$path.name |id}{if $path.type == 'Directory'}/{/if}">{$path.name}</a>
+                        <span class="{$path.type == 'Directory' ? 'directory' : 'file'}" href="{$path.href}">
+                            {$path.name}
+                        </span>
                         {nil}
                         {if $path.type == 'Directory'}/{/if}
                     </td>
