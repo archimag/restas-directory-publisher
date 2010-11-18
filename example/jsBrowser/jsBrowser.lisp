@@ -49,8 +49,7 @@
 
 (restas:mount-submodule -static- (#:restas.directory-publisher)
   (restas.directory-publisher:*baseurl* '("static"))
-;;  (restas.directory-publisher:*directory* (merge-pathnames "static/" *js-browser-directory*)))
-  (restas.directory-publisher:*directory* #P"/")
+  (restas.directory-publisher:*directory* (merge-pathnames "static/" *js-browser-directory*)))
   (restas.directory-publisher:*autoindex* t))
 
 (restas:mount-submodule -api- (#:restas.directory-publisher)
