@@ -12,7 +12,9 @@
            #:*directory-index-files*
            #:*autoindex*
            #:*autoindex-template*
-           #:*enable-cgi-by-type*))
+           #:*enable-cgi-by-type*
+           #:*ignore-pathname-p*
+           #:hidden-file-p))
 
 (in-package #:restas.directory-publisher)
 
@@ -39,6 +41,8 @@
 
 (defvar *enable-cgi-by-type* nil)
 
+(defvar *ignore-pathname-p* nil)
+
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;;; native namestrings
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -64,11 +68,6 @@
         (if type
             (format nil "~A.~A" name type)
             name))))
-
-(defun hidden-file-p (path)
-  (char= (char (path-last-name path)
-               0)
-         #\.))
 
 (defparameter *byte-units* '("kB" "MB" "GB" "TB" "PB" "EB" "ZB" "YB")
   "Symbols for show size of files in human readable format")
@@ -104,21 +103,53 @@
           :size (if (not dir)
                     (format-size (isys:stat-size stat))))))
 
+(defun hidden-file-p (path)
+  (char= (char (path-last-name path) 0)
+         #\.))
+
+(defun ignore-pathname-p (path)
+  (if *ignore-pathname-p*
+      (funcall *ignore-pathname-p* path)
+      (hidden-file-p path)))
+
 (defun directory-autoindex-info (path rpath)
   "Info on directory for autoindex"
-  (list :title (format nil "Index of /~A" rpath)
-        :parent (if (not (equal path *directory*))
-                    (restas:genurl 'route
-                                   :path (append (butlast (cdr (pathname-directory rpath)))
-                                                 '(""))))
-        :paths (iter (for item in (fad:list-directory (merge-pathnames path *directory*)))
-                     (unless (hidden-file-p item)
+  (let (directories files)
+    (iter (for item in (fad:list-directory (merge-pathnames path *directory*)))
+          (unless (ignore-pathname-p item)
+            (if (fad:directory-pathname-p item)
+                (push item directories)
+                (push item files))))
+    (list :title (format nil "Index of /~A" rpath)
+          :parent (if (not (equal path *directory*))
+                      (restas:genurl 'route
+                                     :path (append (butlast (cdr (pathname-directory rpath)))
+                                                   '(""))))
+          :directories (iter (for item in directories)
+                             (collect (list* :href (restas:genurl 'route
+                                                                  :path (append (cdr (pathname-directory rpath))
+                                                                                (list (path-last-name item) "")))
+                                             (path-info item))))
+          :files (iter (for item in files)
                        (collect (list* :href (restas:genurl 'route
                                                             :path (append (cdr (pathname-directory rpath))
-                                                                          (list (path-last-name item))
-                                                                          (if (fad:directory-pathname-p item)
-                                                                              '(""))))
+                                                                          (list (path-last-name item))))
                                        (path-info item)))))))
+        
+  
+  ;; (list :title (format nil "Index of /~A" rpath)
+  ;;       :parent (if (not (equal path *directory*))
+  ;;                   (restas:genurl 'route
+  ;;                                  :path (append (butlast (cdr (pathname-directory rpath)))
+  ;;                                                '(""))))
+  ;;       :paths (iter (for item in (fad:list-directory (merge-pathnames path *directory*)))
+  ;;                    (unless (hidden-file-p item)
+  ;;                      (collect (list* :href (restas:genurl 'route
+  ;;                                                           :path (append (cdr (pathname-directory rpath))
+  ;;                                                                         (list (path-last-name item))
+  ;;                                                                         (if (fad:directory-pathname-p item)
+  ;;                                                                             '(""))))
+  ;;                                      (path-info item)))))))
 
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;

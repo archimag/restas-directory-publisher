@@ -35,16 +35,25 @@
                 </tr>
             {/if}
 
-            {foreach $path in $paths}
+            {foreach $item in $directories}
                 <tr>
                     <td class="n">
-                        <a href="{$path.href}">{$path.name}</a>
-                        {nil}
-                        {if $path.type == 'Directory'}/{/if}
+                        <a href="{$item.href}">{$item.name}/</a>
                     </td>
-                    <td class="m">{$path.lastModified}</td>
-                    <td class="s">{$path.size ? $path.size : '- &nbsp;' |noAutoescape}</td>
-                    <td class="t">{$path.type}</td>
+                    <td class="m">{$item.lastModified}</td>
+                    <td class="s">{$item.size ? $item.size : '- &nbsp;' |noAutoescape}</td>
+                    <td class="t">{$item.type}</td>
+                </tr>
+            {/foreach}
+
+            {foreach $item in $files}
+                <tr>
+                    <td class="n">
+                        <a href="{$item.href}">{$item.name}</a>
+                    </td>
+                    <td class="m">{$item.lastModified}</td>
+                    <td class="s">{$item.size ? $item.size : '- &nbsp;' |noAutoescape}</td>
+                    <td class="t">{$item.type}</td>
                 </tr>
             {/foreach}
         </tbody>
