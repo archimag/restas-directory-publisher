@@ -24,10 +24,10 @@
         </thead>
 
         <tbody>
-            {if $parent}
+            {if $parents}
                 <tr>
                     <td class="n">
-                        <a href="{$parent}">Parent Directory</a>/
+                        <a href="{$parents[length($parents) - 1].href}">Parent Directory</a>/
                     </td>
                     <td class="m">&nbsp;</td>
                     <td class="s">- &nbsp;</td>
@@ -42,7 +42,7 @@
                     </td>
                     <td class="m">{$item.lastModified}</td>
                     <td class="s">{$item.size ? $item.size : '- &nbsp;' |noAutoescape}</td>
-                    <td class="t">{$item.type}</td>
+                    <td class="t">Directory</td>
                 </tr>
             {/foreach}
 
@@ -53,7 +53,7 @@
                     </td>
                     <td class="m">{$item.lastModified}</td>
                     <td class="s">{$item.size ? $item.size : '- &nbsp;' |noAutoescape}</td>
-                    <td class="t">{$item.type}</td>
+                    <td class="t">{$item.mimeType}</td>
                 </tr>
             {/foreach}
         </tbody>
