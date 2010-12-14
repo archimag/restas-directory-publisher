@@ -163,7 +163,7 @@
 ;;;; routes
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
   
-(define-route route ("*path" :method :get)
+(restas:define-route route ("*path" :method :get)
   (let* ((relative-path (parse-native-namestring (format nil "~{~A~^/~}" path)))
          (path (merge-pathnames relative-path
                                 *directory*)))
