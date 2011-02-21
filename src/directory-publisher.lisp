@@ -100,7 +100,7 @@
                                                       :format '((:day 2) #\- :short-month #\- :year #\Space (:hour 2) #\: (:min 2))))
          (dir (fad:directory-pathname-p path)))
     (list :mime-type (if (not dir)
-                         (hunchentoot:mime-type path))
+                         (wsal:mime-type path))
           :name (path-last-name path)
           :last-modified last-modified
           :size (if (not dir)
@@ -168,8 +168,8 @@
          (path (merge-pathnames relative-path
                                 *directory*)))
     (cond
-      ((find :up (pathname-directory relative-path)) hunchentoot:+http-bad-request+)
-      ((ignore-pathname-p path) hunchentoot:+http-not-found+)
+      ((find :up (pathname-directory relative-path)) wsal:+http-bad-request+)
+      ((ignore-pathname-p path) wsal:+http-not-found+)
       ((and (fad:directory-pathname-p path)
             (fad:directory-exists-p path)) (or (iter (for index in *directory-index-files*)
                                                      (let ((index-path (merge-pathnames index path)))
@@ -178,9 +178,9 @@
                                                (if *autoindex*
                                                    (funcall *autoindex-template*
                                                             (directory-autoindex-info path relative-path))
-                                                   hunchentoot:+http-not-found+)))
-      ((not (fad:file-exists-p path)) hunchentoot:+http-not-found+)
-      #+sbcl ((find (pathname-type path) 
-                    *enable-cgi-by-type* 
-                    :test #'string=) (hunchentoot-cgi::handle-cgi-script path))
+                                                   wsal:+http-not-found+)))
+      ((not (fad:file-exists-p path)) wsal:+http-not-found+)
+      ;; #+sbcl ((find (pathname-type path) 
+      ;;               *enable-cgi-by-type* 
+      ;;               :test #'string=) (hunchentoot-cgi::handle-cgi-script path))
       (t path))))
