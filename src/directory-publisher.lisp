@@ -11,12 +11,13 @@
            #:*directory*
            #:*directory-index-files*
            #:*autoindex*
-           #:*autoindex-template*
            #:*enable-cgi-by-type*
            #:*ignore-pathname-p*
            #:default-pathname-info
            #:*pathname-info*
-           #:hidden-pathname-p))
+           #:hidden-pathname-p
+
+           #:view))
 
 (in-package #:restas.directory-publisher)
 
@@ -25,12 +26,13 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (eval-when (:compile-toplevel :load-toplevel :execute)
-  (closure-template:compile-template :common-lisp-backend
-                                     (merge-pathnames "src/directory-publisher.tmpl"
-                                                      (asdf:component-pathname (asdf:find-system '#:restas-directory-publisher)))))
+  (closure-template:compile-cl-templates
+   (merge-pathnames "src/directory-publisher.tmpl"
+                    (asdf:system-source-directory '#:restas-directory-publisher))))
+
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-;;;; Plugin variables
+;;;; module params
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (defvar *directory* nil)
@@ -38,8 +40,6 @@
 (defvar *directory-index-files* '("index.html" "index.htm"))
 
 (defvar *autoindex* t)
-
-(defvar *autoindex-template* 'restas.directory-publisher.view:autoindex)
 
 (defvar *enable-cgi-by-type* nil)
 
@@ -176,11 +176,41 @@
                                                        (finding index-path
                                                                 such-that (fad:file-exists-p index-path))))
                                                (if *autoindex*
-                                                   (funcall *autoindex-template*
-                                                            (directory-autoindex-info path relative-path))
+                                                   (directory-autoindex-info path relative-path)
                                                    hunchentoot:+http-not-found+)))
       ((not (fad:file-exists-p path)) hunchentoot:+http-not-found+)
       #+sbcl ((find (pathname-type path) 
                     *enable-cgi-by-type* 
                     :test #'string=) (hunchentoot-cgi::handle-cgi-script path))
       (t path))))
+
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;;; view
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(defclass view ()
+  ((ttable)))
+
+(defmethod shared-initialize :after ((view view) slot-names &key template-package)
+  (setf (slot-value view 'ttable)
+        (closure-template:package-ttable 
+         (find-package (or template-package
+                           '#:restas.directory-publisher.view)))))
+
+(defmethod restas:render-object ((view view) (data cons))
+  (if (eql (restas:route-symbol restas:*route*) 'route)
+      (closure-template:ttable-call-template (slot-value view 'ttable)
+                                             "AUTOINDEX"
+                                             data)
+      (call-next-method)))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;;; initialization
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+                                             
+(defmethod restas:initialize-module-instance ((module (eql #.*package*)) context)
+  (unless (restas:context-symbol-value context '*default-render-method*)
+    (restas:context-add-variable context
+                                 '*default-render-method*
+                                 (make-instance 'view))))
