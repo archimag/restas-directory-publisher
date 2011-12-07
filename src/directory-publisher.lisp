@@ -91,8 +91,7 @@
                 symbol)
         (format nil "~A B" bytes))))
 
-
-(defun default-pathname-info (path)
+#-win32(defun default-pathname-info (path)
   "Information on pathname as plist"
   (let* ((stat (isys:stat (native-namestring path)))
          (last-modified (local-time:format-timestring nil
@@ -105,6 +104,15 @@
           :last-modified last-modified
           :size (if (not dir)
                     (format-size (isys:stat-size stat))))))
+#+win32(defun default-pathname-info (path)
+  "Information on pathname as plist"
+  (let* ((dir (fad:directory-pathname-p path)))
+    (list :mime-type (if (not dir)
+                         (hunchentoot:mime-type path))
+          :name (path-last-name path)
+          :last-modified "Unavailable"
+          :size (if (not dir)
+                    "Unavailable"))))
 
 (defun pathname-info (path)
   (if *pathname-info*
