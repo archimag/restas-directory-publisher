@@ -5,13 +5,10 @@
 ;;;;
 ;;;; Author: Moskvitin Andrey <archimag@gmail.com>
 
-
-(defpackage #:restas-directory-publisher-system
-  (:use #:cl #:asdf))
-
-(in-package #:restas-directory-publisher-system)
-
-(defsystem restas-directory-publisher
-  :depends-on (#:restas #:closure-template #:local-time #-win32 #:iolib.syscalls #+sbcl :hunchentoot-cgi)
-  :components ((:module "src"
-                        :components ((:file "directory-publisher")))))
+(defsystem #:restas-directory-publisher
+  :defsystem-depends-on (#:closure-template)
+  :depends-on (#:restas #:local-time)
+  :pathname "src"
+  :serial t
+  :components ((:closure-template "autoindex")
+               (:file "directory-publisher")))

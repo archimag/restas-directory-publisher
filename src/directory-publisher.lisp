@@ -7,29 +7,15 @@
 
 (restas:define-module #:restas.directory-publisher
   (:use :cl :iter)
-  (:export #:route
-           #:*directory*
+  (:export #:*directory*
            #:*directory-index-files*
            #:*autoindex*
-           #:*enable-cgi-by-type*
            #:*ignore-pathname-p*
-           #:default-pathname-info
-           #:*pathname-info*
-           #:hidden-pathname-p
-
-           #:view))
+           #:pathname-info
+           #:hidden-pathname-p)
+  (:render-method #'restas.directory-publisher.view:autoindex))
 
 (in-package #:restas.directory-publisher)
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-;;;; compile template
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-(eval-when (:compile-toplevel :load-toplevel :execute)
-  (closure-template:compile-cl-templates
-   (merge-pathnames "src/directory-publisher.tmpl"
-                    (asdf:system-source-directory '#:restas-directory-publisher))))
-
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;;; module params
@@ -39,13 +25,9 @@
 
 (defvar *directory-index-files* '("index.html" "index.htm"))
 
-(defvar *autoindex* t)
-
-(defvar *enable-cgi-by-type* nil)
+(defvar *autoindex* nil)
 
 (defvar *ignore-pathname-p* nil)
-
-(defvar *pathname-info* nil)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;;; native namestrings
@@ -91,33 +73,30 @@
                 symbol)
         (format nil "~A B" bytes))))
 
-#-win32(defun default-pathname-info (path)
-  "Information on pathname as plist"
-  (let* ((stat (isys:stat (native-namestring path)))
-         (last-modified (local-time:format-timestring nil
-                                                      (local-time:unix-to-timestamp (isys:stat-mtime stat))
-                                                      :format '((:day 2) #\- :short-month #\- :year #\Space (:hour 2) #\: (:min 2))))
-         (dir (fad:directory-pathname-p path)))
-    (list :mime-type (if (not dir)
-                         (hunchentoot:mime-type path))
-          :name (path-last-name path)
-          :last-modified last-modified
-          :size (if (not dir)
-                    (format-size (isys:stat-size stat))))))
-#+win32(defun default-pathname-info (path)
-  "Information on pathname as plist"
-  (let* ((dir (fad:directory-pathname-p path)))
-    (list :mime-type (if (not dir)
-                         (hunchentoot:mime-type path))
-          :name (path-last-name path)
-          :last-modified "Unavailable"
-          :size (if (not dir)
-                    "Unavailable"))))
+(defun format-last-modified (timestamp)
+  (local-time:format-timestring
+   nil
+   timestamp
+   :format '((:day 2) #\- :short-month #\- :year #\Space (:hour 2) #\: (:min 2))))
 
+#+(and sbcl unix)
 (defun pathname-info (path)
-  (if *pathname-info*
-      (funcall *pathname-info* path)
-      (default-pathname-info path)))
+  (let ((stat (sb-posix:stat path))
+        (isdir (fad:directory-pathname-p path)))
+    (list :mime-type (if (not isdir) (hunchentoot:mime-type path))
+          :name (path-last-name path)
+          :last-modified (format-last-modified (local-time:unix-to-timestamp (sb-posix:stat-mtime stat)))
+          :size (if (not isdir) (format-size (sb-posix:stat-size stat))))))
+
+#-(and sbcl unix)
+(defun pathname-info (path)
+  (let ((isdir (fad:directory-pathname-p path)))
+    (list :mime-type (if (not isdir) (hunchentoot:mime-type path))
+          :name (path-last-name path)
+          :last-modified (format-last-modified (local-time:universal-to-timestamp (file-write-date path)))
+          :size (if (not isdir) (ignore-errors
+                                  (format-size
+                                   (with-open-file (s path) (file-length s))))))))
 
 (defun hidden-pathname-p (path)
   (if (not (equal path
@@ -149,7 +128,7 @@
             :parents (if (not (equal path *directory*))
                          (cons (list :href (restas:genurl 'route
                                                           :path '("")
-                                                          :name "/"))
+                                                          ))
                                (iter (for item in (butlast (cdr (pathname-directory rpath))))
                                      (collect item into curpath)
                                      (collect (list :href (restas:genurl 'route
@@ -170,55 +149,26 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;;; routes
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-  
+
 (restas:define-route route ("*path" :method :get)
   (let* ((relative-path (parse-native-namestring (format nil "~{~A~^/~}" path)))
          (path (merge-pathnames relative-path
                                 *directory*)))
     (cond
-      ((find :up (pathname-directory relative-path)) hunchentoot:+http-bad-request+)
-      ((ignore-pathname-p path) hunchentoot:+http-not-found+)
+      ((or (find :up (pathname-directory relative-path))
+           (find :absolute (pathname-directory relative-path)))
+       hunchentoot:+http-bad-request+)
+      ((ignore-pathname-p path)
+       hunchentoot:+http-not-found+)
       ((and (fad:directory-pathname-p path)
-            (fad:directory-exists-p path)) (or (iter (for index in *directory-index-files*)
-                                                     (let ((index-path (merge-pathnames index path)))
-                                                       (finding index-path
-                                                                such-that (fad:file-exists-p index-path))))
-                                               (if *autoindex*
-                                                   (directory-autoindex-info path relative-path)
-                                                   hunchentoot:+http-not-found+)))
-      ((not (fad:file-exists-p path)) hunchentoot:+http-not-found+)
-      #+sbcl ((find (pathname-type path) 
-                    *enable-cgi-by-type* 
-                    :test #'string=) (hunchentoot-cgi::handle-cgi-script path))
+            (fad:directory-exists-p path))
+       (or (iter (for index in *directory-index-files*)
+                 (let ((index-path (merge-pathnames index path)))
+                   (finding index-path
+                            such-that (fad:file-exists-p index-path))))
+           (if *autoindex*
+               (directory-autoindex-info path relative-path)
+               hunchentoot:+http-not-found+)))
+      ((not (fad:file-exists-p path))
+       hunchentoot:+http-not-found+)
       (t path))))
-
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-;;;; view
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-(defclass view ()
-  ((ttable)))
-
-(defmethod shared-initialize :after ((view view) slot-names &key template-package)
-  (setf (slot-value view 'ttable)
-        (closure-template:package-ttable 
-         (find-package (or template-package
-                           '#:restas.directory-publisher.view)))))
-
-(defmethod restas:render-object ((view view) (data cons))
-  (if (eql (restas:route-symbol restas:*route*) 'route)
-      (closure-template:ttable-call-template (slot-value view 'ttable)
-                                             "AUTOINDEX"
-                                             data)
-      (call-next-method)))
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-;;;; initialization
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-                                             
-(defmethod restas:initialize-module-instance ((module (eql #.*package*)) context)
-  (unless (restas:context-symbol-value context '*default-render-method*)
-    (restas:context-add-variable context
-                                 '*default-render-method*
-                                 (make-instance 'view))))
