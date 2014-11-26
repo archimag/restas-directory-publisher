@@ -13,7 +13,7 @@
            #:*ignore-pathname-p*
            #:pathname-info
            #:hidden-pathname-p)
-  (:render-method #'restas.directory-publisher.view:autoindex))
+  (:render-method (find-package '#:restas.directory-publisher.view)))
 
 (in-package #:restas.directory-publisher)
 
@@ -83,7 +83,7 @@
 (defun pathname-info (path)
   (let ((stat (sb-posix:stat path))
         (isdir (fad:directory-pathname-p path)))
-    (list :mime-type (if (not isdir) (hunchentoot:mime-type path))
+    (list :mime-type (if (not isdir) (restas:mime-type path))
           :name (path-last-name path)
           :last-modified (format-last-modified (local-time:unix-to-timestamp (sb-posix:stat-mtime stat)))
           :size (if (not isdir) (format-size (sb-posix:stat-size stat))))))
@@ -91,7 +91,7 @@
 #-(and sbcl unix)
 (defun pathname-info (path)
   (let ((isdir (fad:directory-pathname-p path)))
-    (list :mime-type (if (not isdir) (hunchentoot:mime-type path))
+    (list :mime-type (if (not isdir) (restas:mime-type path))
           :name (path-last-name path)
           :last-modified (format-last-modified (local-time:universal-to-timestamp (file-write-date path)))
           :size (if (not isdir) (ignore-errors
@@ -157,9 +157,9 @@
     (cond
       ((or (find :up (pathname-directory relative-path))
            (find :absolute (pathname-directory relative-path)))
-       hunchentoot:+http-bad-request+)
+       restas:+http-bad-request+)
       ((ignore-pathname-p path)
-       hunchentoot:+http-not-found+)
+       restas:+http-not-found+)
       ((and (fad:directory-pathname-p path)
             (fad:directory-exists-p path))
        (or (iter (for index in *directory-index-files*)
@@ -168,7 +168,7 @@
                             such-that (fad:file-exists-p index-path))))
            (if *autoindex*
                (directory-autoindex-info path relative-path)
-               hunchentoot:+http-not-found+)))
+               restas:+http-not-found+)))
       ((not (fad:file-exists-p path))
-       hunchentoot:+http-not-found+)
+       restas:+http-not-found+)
       (t path))))
