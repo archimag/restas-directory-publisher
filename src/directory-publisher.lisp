@@ -13,7 +13,7 @@
            #:*ignore-pathname-p*
            #:pathname-info
            #:hidden-pathname-p)
-  (:render-method (find-package '#:restas.directory-publisher.view)))
+  (:renderer (find-package '#:restas.directory-publisher.view)))
 
 (in-package #:restas.directory-publisher)
 
